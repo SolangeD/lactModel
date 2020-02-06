@@ -1,0 +1,15 @@
+Package: lactModel
+Type: Package
+Title: Model lactation curve of (mountain-pastured) cows
+Version: 0.1.1
+Date: 2020-02-06
+Author: Solange Duruz
+Maintainer: Solange Duruz <solange.duruz@alumni.epfl.ch>
+Description: Mathematical modelling of lactation curve of (mountain-pastured) cows
+License: GPL (>= 2)
+Imports: RColorBrewer
+LinkingTo:
+RoxygenNote: 6.1.1
+Suggests: 
+VignetteBuilder: knitr
+NeedsCompilation: no
