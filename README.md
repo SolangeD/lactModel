@@ -11,3 +11,5 @@ To use it you can either
   (you will need to rerun the script everytime you start a new R-session since it is not saved as a package)
   
 The way to use functions created in this package is defined in the lactModel-manual.pdf  
+
+In the /inst/extdata you also have the rest of the code used in the publication (filtering of the data, link between environment and milk records etc...)
