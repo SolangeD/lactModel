@@ -110,25 +110,47 @@ corrplot(cor(corr_data, use='pairwise.complete.obs'), method="color")
 ####################################
 ########### Test k-value ###########
 ####################################
-sql_lact_curve=gsub('\n',' ', paste0(sql_select, sql_from, " where laktation_nr>0",sql_groupby), perl=TRUE)
+sql_lact_curve=gsub('\n',' ', paste0(sql_select,' ', sql_from, " where laktation_nr>0",sql_groupby,''), perl=TRUE)
 lact_curve=dbGetQuery(con_pos, sql_lact_curve)
 lact_curve=lact_curve[lact_curve[,'testday']<lact_curve[,'t1'],]
 
+result=matrix(nrow=6, ncol=3)
+colnames(result)=c('cv','k')
+i=0
+for(cv in c(9,10,11,12,1,2)){
+  i=i+1
+  data_in=lact_curve[lact_curve[,'calving_month']==cv,]
+    y_obs=data_in[,'milk_final']
+    t_obs=data_in[,'testday']
+    w=data_in[,'num_cow']
+    if(cv%in%c(9,10,11)){
+      initial=stats::lm(y_obs~1+I(exp(-0.3*t_obs))+t_obs,weights =data_in[,'num_cow'])
+    } else {
+      initial=stats::lm(y_obs~1+I(exp(-0.1*t_obs))+t_obs,weights =data_in[,'num_cow'])
+    }
+    model<-nls(y_obs ~ a+b*exp(k*t_obs)+ c*t_obs,weights=w,start=list(a=31.1,b=-6.93,c=-0.06, k=-0.3))
+    result[i,'cv']=cv
+    result[i,'k']=coef(model)['k']
+}
+# k between 0.05 (February) and 0.37 (September). 
+
+# See impact on curve from september
 sept=lact_curve[lact_curve[,'calving_month']==9,]
-initial=stats::lm(sept[,'milk_final']~1+I(exp(-0.1*sept[,'testday']))+ sept[,'testday'],weights =sept[,'num_cow'])
 y_obs=sept[,'milk_final']
 t_obs=sept[,'testday']
 w=sept[,'num_cow']
+initial=stats::lm(y_obs~1+I(exp(-0.1*t_obs))+t_obs,weights =sept[,'num_cow'])
 model<-nls(y_obs ~ a+b*exp(k*t_obs)+ c*t_obs,weights=w,start=list(a=initial$coefficients[1],b=initial$coefficients[2],c=initial$coefficients[3], k=-0.1))
+#Plot to see the result
+plot(NA, xlim=c(0,300), ylim=c(0,30), xlab='Days in milk', ylab='Milk yield [kg]', bty='n')
+points(sept[,'milk_final']~sept[,'testday'], col=brewer.pal(3,'Blues')[2], pch=19)
+#Prediction with non-linear
+pred_y=predict(model, data.frame(t_obs=c(1:365))) 
+lines(t(c(1:365)), pred_y, col='Black')
+#Prediction with linear
+pred_y2=predict(initial, data.frame(t_obs=c(1:365))) 
+lines(t(c(1:365)), pred_y2, col='red')
 
-feb=lact_curve[lact_curve[,'calving_month']==2,]
-initial=stats::lm(feb[,'milk_final']~1+I(exp(-0.1*feb[,'testday']))+ feb[,'testday'],weights =feb[,'num_cow'])
-y_obs=feb[,'milk_final']
-t_obs=feb[,'testday']
-model_null<-nls(y_obs ~ a+b*exp(-0.1*t_obs)+ c*t_obs,start=list(a=31.1,b=-6.93,c=-0.06))
-model<-nls(y_obs ~ a+b*exp(k*t_obs)+ c*t_obs,start=list(a=31.1,b=-6.93,c=-0.06, k=-0.1))
-lmtest::lrtest(model, model_null)
-### Result: k closer to -0.3 than -0.1
 
 #####################################
 ############# Figure 2 ##############
